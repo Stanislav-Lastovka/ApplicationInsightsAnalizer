@@ -1,0 +1,21 @@
+{
+  "auth": {
+    "mode": "azureCli",
+    "tenantId": "optional-tenant-id"
+  },
+  "azure": {
+    "workspaceId": "00000000-0000-0000-0000-000000000000"
+  },
+  "defaults": {
+    "timezone": "UTC",
+    "outputDir": "./exports",
+    "format": "jsonl",
+    "roleName": "optional-app-role-name"
+  },
+  "profiles": {
+    "prod": {
+      "workspaceId": "00000000-0000-0000-0000-000000000000",
+      "outputDir": "./exports/prod"
+    }
+  }
+}
