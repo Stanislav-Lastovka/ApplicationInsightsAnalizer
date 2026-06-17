@@ -18,46 +18,66 @@ export type AnalyzerOptions = {
 
 export function analyzeRecords(records: LogRecord[], options: AnalyzerOptions = {}): AnalysisResult {
   const limit = options.limit ?? 10;
+  const filteredRecords = records.filter((record) => !isIgnoredRecord(record));
 
   return {
-    summary: buildSummary(records),
-    topProblems: topCounts(records, problemKey, limit),
-    topMessages: topCounts(records, (record) => record.message, limit),
-    topRoles: topCounts(records, (record) => record.roleName, limit),
+    summary: buildSummary(filteredRecords),
+    topProblems: topCounts(filteredRecords, problemKey, limit),
+    topMessages: topCounts(filteredRecords, (record) => record.message, limit),
+    topRoles: topCounts(filteredRecords, (record) => record.roleName, limit),
     topFailedRequests: topCounts(
-      records.filter((record) => record.table === "requests"),
+      filteredRecords.filter((record) => record.table === "requests"),
       (record) => requestKey(record),
       limit
     ),
     topFailedDependencies: topCounts(
-      records.filter((record) => record.table === "dependencies"),
+      filteredRecords.filter((record) => record.table === "dependencies"),
       (record) => dependencyKey(record),
       limit
     ),
-    timeline: buildTimeline(records, options.timelineBucketMinutes ?? 15),
-    correlatedOperations: buildCorrelatedOperations(records, limit),
+    timeline: buildTimeline(filteredRecords, options.timelineBucketMinutes ?? 15),
+    correlatedOperations: buildCorrelatedOperations(filteredRecords, limit),
     exceptionDetails: buildErrorDetails(
-      records.filter((record) => record.table === "exceptions"),
+      filteredRecords.filter((record) => record.table === "exceptions"),
       problemKey,
       limit
     ),
     traceDetails: buildErrorDetails(
-      records.filter((record) => record.table === "traces"),
+      filteredRecords.filter((record) => record.table === "traces"),
       (record) => record.message,
       limit
     ),
     requestDetails: buildRequestDetails(
-      records.filter((record) => record.table === "requests"),
+      filteredRecords.filter((record) => record.table === "requests"),
       limit
     ),
     dependencyDetails: buildDependencyDetails(
-      records.filter((record) => record.table === "dependencies"),
+      filteredRecords.filter((record) => record.table === "dependencies"),
       limit
     ),
-    requestErrorCorrelations: buildRequestErrorCorrelations(records, limit),
-    unlinkedErrors: buildUnlinkedErrors(records, limit),
-    recommendations: buildRecommendations(records)
+    requestErrorCorrelations: buildRequestErrorCorrelations(filteredRecords, limit),
+    unlinkedErrors: buildUnlinkedErrors(filteredRecords, limit),
+    recommendations: buildRecommendations(filteredRecords)
   };
+}
+
+function isIgnoredRecord(record: LogRecord): boolean {
+  return hasIgnoredHealthEndpoint(record);
+}
+
+function hasIgnoredHealthEndpoint(record: LogRecord): boolean {
+  const values = [
+    record.name,
+    record.url,
+    stringValue(record.raw.Name),
+    stringValue(record.raw.name),
+    stringValue(record.raw.Url),
+    stringValue(record.raw.url),
+    stringValue(record.raw.Target),
+    stringValue(record.raw.target)
+  ];
+
+  return values.some((value) => value?.toLowerCase().includes("/api/v2/health"));
 }
 
 function buildSummary(records: LogRecord[]): AnalysisResult["summary"] {

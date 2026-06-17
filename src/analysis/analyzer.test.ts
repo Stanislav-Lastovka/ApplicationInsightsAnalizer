@@ -33,4 +33,32 @@ describe("analyzeRecords", () => {
     expect(result.topProblems[0]).toEqual({ key: "NullReference", count: 1 });
     expect(result.correlatedOperations[0]?.operationId).toBe("op-1");
   });
+  it("ignores health endpoint records during analysis", () => {
+    const records: LogRecord[] = [
+      {
+        timestamp: "2026-06-15T10:00:00.000Z",
+        table: "requests",
+        operationId: "op-health",
+        name: "GET /api/v2/health",
+        url: "https://example.test/api/v2/health",
+        resultCode: "503",
+        raw: {}
+      },
+      {
+        timestamp: "2026-06-15T10:01:00.000Z",
+        table: "requests",
+        operationId: "op-orders",
+        name: "GET /orders",
+        url: "https://example.test/orders",
+        resultCode: "500",
+        raw: {}
+      }
+    ];
+
+    const result = analyzeRecords(records);
+
+    expect(result.summary.total).toBe(1);
+    expect(result.summary.failedRequests).toBe(1);
+    expect(result.topFailedRequests).toEqual([{ key: "GET /orders (500)", count: 1 }]);
+  });
 });

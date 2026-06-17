@@ -16,7 +16,7 @@ AppExceptions
 | extend PropertiesBag = todynamic(column_ifexists("Properties", dynamic({}))), CustomDimensionsBag = todynamic(column_ifexists("customDimensions", dynamic({})))
 | where tostring(coalesce(PropertiesBag["AspNetCoreEnvironment"], CustomDimensionsBag["AspNetCoreEnvironment"])) == "Production"
 | where tostring(column_ifexists("ResultCode", "")) !in ("401", "404")
-| where tostring(column_ifexists("Url", "")) !contains "/api/v2/health"
+| where tostring(column_ifexists("Name", "")) !contains "/api/v2/health" and tostring(column_ifexists("Url", "")) !contains "/api/v2/health"
 {roleFilter}
 | project TimeGenerated, Type, ProblemId, OuterMessage, InnermostMessage, OperationId, AppRoleName, SeverityLevel, ItemCount
 | order by TimeGenerated desc
@@ -32,7 +32,7 @@ AppTraces
 | extend PropertiesBag = todynamic(column_ifexists("Properties", dynamic({}))), CustomDimensionsBag = todynamic(column_ifexists("customDimensions", dynamic({})))
 | where tostring(coalesce(PropertiesBag["AspNetCoreEnvironment"], CustomDimensionsBag["AspNetCoreEnvironment"])) == "Production"
 | where tostring(column_ifexists("ResultCode", "")) !in ("401", "404")
-| where tostring(column_ifexists("Url", "")) !contains "/api/v2/health"
+| where tostring(column_ifexists("Name", "")) !contains "/api/v2/health" and tostring(column_ifexists("Url", "")) !contains "/api/v2/health"
 {roleFilter}
 | where SeverityLevel >= 3
 | project TimeGenerated, Message, SeverityLevel, OperationId, AppRoleName, Properties
@@ -51,7 +51,7 @@ AppRequests
 {roleFilter}
 | where Success == false or tostring(ResultCode) startswith "5"
 | where tostring(ResultCode) !in ("401", "404")
-| where tostring(Url) !contains "/api/v2/health"
+| where tostring(Name) !contains "/api/v2/health" and tostring(Url) !contains "/api/v2/health"
 | project TimeGenerated, Name, Url, ResultCode, DurationMs, OperationId, AppRoleName, Success
 | order by TimeGenerated desc
 `.trim()
