@@ -11,6 +11,8 @@ import type {
 } from "../domain/analysisResult.js";
 import type { LogRecord } from "../domain/logRecord.js";
 
+const IGNORED_RESULT_CODES = new Set(["401", "404", "499"]);
+
 export type AnalyzerOptions = {
   timelineBucketMinutes?: number;
   limit?: number;
@@ -62,7 +64,13 @@ export function analyzeRecords(records: LogRecord[], options: AnalyzerOptions = 
 }
 
 function isIgnoredRecord(record: LogRecord): boolean {
-  return hasIgnoredHealthEndpoint(record);
+  return hasIgnoredHealthEndpoint(record) || hasIgnoredResultCode(record);
+}
+
+function hasIgnoredResultCode(record: LogRecord): boolean {
+  const resultCode = record.resultCode ?? stringValue(record.raw.ResultCode) ?? stringValue(record.raw.resultCode);
+
+  return resultCode ? IGNORED_RESULT_CODES.has(resultCode) : false;
 }
 
 function hasIgnoredHealthEndpoint(record: LogRecord): boolean {
