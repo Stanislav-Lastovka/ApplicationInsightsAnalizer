@@ -80,6 +80,19 @@ export type UnlinkedErrorGroup = {
   }>;
 };
 
+export type ErrorFocusedGroup = {
+  error: string;
+  count: number;
+  firstSeen: string;
+  lastSeen: string;
+  roles: string[];
+  operationIds: string[];
+  messages: string[];
+  relatedRequests: RequestDetailGroup[];
+  relatedDependencies: DependencyDetailGroup[];
+  relatedTraces: ErrorDetailGroup[];
+};
+
 export type AnalysisResult = {
   summary: {
     total: number;
@@ -103,5 +116,6 @@ export type AnalysisResult = {
   dependencyDetails: DependencyDetailGroup[];
   requestErrorCorrelations: RequestErrorCorrelation[];
   unlinkedErrors: UnlinkedErrorGroup[];
+  errorFocusedGroups: ErrorFocusedGroup[];
   recommendations: string[];
 };

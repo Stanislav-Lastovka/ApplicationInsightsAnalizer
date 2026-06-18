@@ -314,8 +314,9 @@ npm run dev -- analyze ./exports/latest/errors.jsonl --limit 20
 The markdown report contains:
 
 - `Summary`
-- `Top Failed Requests`
-- grouped errors linked to failed requests
+- `Errors`, grouped from exported exceptions without applying the display limit
+- related failed requests, dependencies, and traces for each error where correlation data is available
+- `Top Failed Requests` as supporting context
 - `Unlinked Errors`, grouped by operation/correlation id and then by error type
 
 ### `run`

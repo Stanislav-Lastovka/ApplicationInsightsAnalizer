@@ -96,4 +96,57 @@ describe("analyzeRecords", () => {
     expect(result.summary.failedDependencies).toBe(0);
     expect(result.topFailedRequests).toEqual([{ key: "GET /orders (500)", count: 1 }]);
   });
+
+  it("keeps all exported exception groups in the error-focused report data regardless of limit", () => {
+    const records: LogRecord[] = [
+      {
+        timestamp: "2026-06-15T10:00:00.000Z",
+        table: "exceptions",
+        problemId: "ProblemA",
+        operationId: "op-a",
+        message: "A failed",
+        raw: {}
+      },
+      {
+        timestamp: "2026-06-15T10:01:00.000Z",
+        table: "exceptions",
+        problemId: "ProblemB",
+        operationId: "op-b",
+        message: "B failed",
+        raw: {}
+      },
+      {
+        timestamp: "2026-06-15T10:02:00.000Z",
+        table: "requests",
+        operationId: "op-b",
+        name: "POST /index",
+        resultCode: "500",
+        raw: {}
+      }
+    ];
+
+    const result = analyzeRecords(records, { limit: 1 });
+
+    expect(result.errorFocusedGroups.map((group) => group.error)).toEqual(["ProblemA", "ProblemB"]);
+    expect(result.errorFocusedGroups.reduce((sum, group) => sum + group.count, 0)).toBe(2);
+    expect(result.errorFocusedGroups[1]?.relatedRequests[0]?.key).toBe("POST /index (500)");
+  });
+
+  it("does not drop exported exceptions when they match supporting-data filters", () => {
+    const records: LogRecord[] = [
+      {
+        timestamp: "2026-06-15T10:00:00.000Z",
+        table: "exceptions",
+        problemId: "HealthFailure",
+        name: "GET /api/v2/health",
+        resultCode: "404",
+        raw: {}
+      }
+    ];
+
+    const result = analyzeRecords(records);
+
+    expect(result.summary.exceptions).toBe(1);
+    expect(result.errorFocusedGroups[0]?.error).toBe("HealthFailure");
+  });
 });

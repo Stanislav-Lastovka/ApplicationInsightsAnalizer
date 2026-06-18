@@ -2,6 +2,7 @@ import type {
   AnalysisResult,
   CountItem,
   DependencyDetailGroup,
+  ErrorFocusedGroup,
   ErrorDetailGroup,
   OperationGroup,
   RequestErrorCorrelation,
@@ -59,11 +60,16 @@ export function analyzeRecords(records: LogRecord[], options: AnalyzerOptions = 
     ),
     requestErrorCorrelations: buildRequestErrorCorrelations(filteredRecords, limit),
     unlinkedErrors: buildUnlinkedErrors(filteredRecords, limit),
+    errorFocusedGroups: buildErrorFocusedGroups(filteredRecords, limit),
     recommendations: buildRecommendations(filteredRecords)
   };
 }
 
 function isIgnoredRecord(record: LogRecord): boolean {
+  if (record.table === "exceptions") {
+    return false;
+  }
+
   return hasIgnoredHealthEndpoint(record) || hasIgnoredResultCode(record);
 }
 
@@ -399,6 +405,78 @@ function buildUnlinkedErrorTypeGroups(records: LogRecord[]): UnlinkedErrorGroup[
     })
     .sort((a, b) => b.count - a.count || a.error.localeCompare(b.error))
     .slice(0, 5);
+}
+
+function buildErrorFocusedGroups(records: LogRecord[], contextLimit: number): ErrorFocusedGroup[] {
+  const exceptions = records.filter((record) => record.table === "exceptions");
+  const recordsByOperation = groupRecordsByOperation(records);
+
+  return groupRecords(exceptions, (record) => problemKey(record) ?? "Unknown exception")
+    .map(([error, group]) => {
+      const sorted = sortByTimestamp(group);
+      const relatedRecords = collectRelatedRecords(group, recordsByOperation);
+
+      return {
+        error,
+        count: group.length,
+        firstSeen: sorted[0]?.timestamp ?? "",
+        lastSeen: sorted.at(-1)?.timestamp ?? "",
+        roles: unique(group.map((record) => record.roleName).filter(isDefined)),
+        operationIds: unique(group.map((record) => record.operationId).filter(isDefined)),
+        messages: unique(group.map((record) => record.message).filter(isDefined)),
+        relatedRequests: buildRequestDetails(
+          relatedRecords.filter((record) => record.table === "requests"),
+          contextLimit
+        ),
+        relatedDependencies: buildDependencyDetails(
+          relatedRecords.filter((record) => record.table === "dependencies"),
+          contextLimit
+        ),
+        relatedTraces: buildErrorDetails(
+          relatedRecords.filter((record) => record.table === "traces"),
+          (record) => record.message,
+          contextLimit
+        )
+      };
+    })
+    .sort((a, b) => b.count - a.count || a.error.localeCompare(b.error));
+}
+
+function groupRecordsByOperation(records: LogRecord[]): Map<string, LogRecord[]> {
+  const recordsByOperation = new Map<string, LogRecord[]>();
+
+  for (const record of records) {
+    if (!record.operationId) {
+      continue;
+    }
+
+    const group = recordsByOperation.get(record.operationId) ?? [];
+    group.push(record);
+    recordsByOperation.set(record.operationId, group);
+  }
+
+  return recordsByOperation;
+}
+
+function collectRelatedRecords(
+  exceptions: LogRecord[],
+  recordsByOperation: Map<string, LogRecord[]>
+): LogRecord[] {
+  const related = new Map<LogRecord, LogRecord>();
+
+  for (const exception of exceptions) {
+    if (!exception.operationId) {
+      continue;
+    }
+
+    for (const record of recordsByOperation.get(exception.operationId) ?? []) {
+      if (record.table !== "exceptions") {
+        related.set(record, record);
+      }
+    }
+  }
+
+  return [...related.values()];
 }
 
 function errorCorrelationKey(record: LogRecord): string | undefined {

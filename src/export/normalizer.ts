@@ -19,10 +19,10 @@ function rowsFromLogsTable(table: LogsTable): Record<string, unknown>[] {
 
 export function normalizeRecord(table: LogTable, row: Record<string, unknown>): LogRecord {
   const message =
-    stringValue(row.outerMessage) ??
-    stringValue(row.OuterMessage) ??
     stringValue(row.innermostMessage) ??
     stringValue(row.InnermostMessage) ??
+    stringValue(row.outerMessage) ??
+    stringValue(row.OuterMessage) ??
     stringValue(row.message) ??
     stringValue(row.Message) ??
     stringValue(row.target) ??

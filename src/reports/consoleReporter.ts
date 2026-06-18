@@ -15,13 +15,10 @@ export function printConsoleReport(result: AnalysisResult): void {
   );
   console.log(summary.toString());
 
-  printCountTable("Top problems", result.topProblems);
-  printCountTable("Top failed requests", result.topFailedRequests);
-  printCountTable("Top failed dependencies", result.topFailedDependencies);
   printDetailTable(
-    "Exception details",
-    result.exceptionDetails.map((item) => [
-      item.key,
+    "Errors",
+    result.errorFocusedGroups.map((item) => [
+      item.error,
       item.count,
       item.firstSeen,
       item.lastSeen,
@@ -30,6 +27,8 @@ export function printConsoleReport(result: AnalysisResult): void {
     ]),
     ["Error", "Count", "First Seen", "Last Seen", "Operation IDs", "Messages"]
   );
+  printCountTable("Top failed requests", result.topFailedRequests);
+  printCountTable("Top failed dependencies", result.topFailedDependencies);
 
   console.log("\nRecommendations");
   for (const recommendation of result.recommendations) {
