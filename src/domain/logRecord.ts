@@ -22,7 +22,7 @@ export type ExportManifest = {
   workspaceId: string;
   from: string;
   to: string;
-  roleName?: string;
+  presetId?: string;
   queries: string[];
   files: string[];
 };

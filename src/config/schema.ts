@@ -17,8 +17,7 @@ export const appConfigSchema = z.object({
     .object({
       timezone: z.string().default("UTC"),
       outputDir: z.string().default("./exports"),
-      format: z.enum(["jsonl", "json", "csv"]).default("jsonl"),
-      roleName: z.string().min(1).optional()
+      format: z.enum(["jsonl", "json", "csv"]).default("jsonl")
     })
     .default({ timezone: "UTC", outputDir: "./exports", format: "jsonl" }),
   profiles: z

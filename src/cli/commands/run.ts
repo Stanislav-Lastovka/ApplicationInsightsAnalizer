@@ -8,10 +8,10 @@ type RunOptions = {
   workspaceId?: string;
   from: string;
   to?: string;
+  preset: string;
   queries?: string;
   out?: string;
   format?: "jsonl" | "json" | "csv";
-  role?: string;
   report?: string;
 };
 
@@ -23,7 +23,7 @@ export function registerRunCommand(program: Command): void {
     .option("--to <date>", "End date. Defaults to now.")
     .option("--profile <name>", "Config profile to use.")
     .option("--workspace-id <id>", "Log Analytics workspace id.")
-    .option("--role <name>", "Filter logs by Application Insights role name.")
+    .requiredOption("--preset <id>", "Built-in query preset id.")
     .option("--queries <ids>", "Comma-separated built-in query ids.")
     .option("--out <dir>", "Output directory.")
     .option("--format <format>", "Output format: jsonl, json, csv.", "jsonl")

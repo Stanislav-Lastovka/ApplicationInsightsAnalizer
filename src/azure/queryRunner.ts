@@ -10,7 +10,6 @@ export type QueryRunnerOptions = {
   workspaceId: string;
   from: string;
   to: string;
-  roleName?: string;
 };
 
 export async function runWorkspaceQuery(
@@ -19,8 +18,7 @@ export async function runWorkspaceQuery(
 ): Promise<LogRecord[]> {
   const renderedKql = renderQueryWithOptions(query.kql, {
     from: options.from,
-    to: options.to,
-    roleName: options.roleName
+    to: options.to
   });
   const client = createLogsClient(options.auth);
   const result = await client.queryWorkspace(options.workspaceId, renderedKql, {

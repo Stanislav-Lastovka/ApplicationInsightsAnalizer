@@ -28,8 +28,7 @@ export function registerConfigCommand(program: Command): void {
         defaults: {
           timezone: "UTC",
           outputDir: "./exports",
-          format: "jsonl",
-          roleName: "optional-app-role-name"
+          format: "jsonl"
         },
         profiles: {
           prod: {

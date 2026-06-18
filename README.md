@@ -2,7 +2,7 @@
 
 Console TypeScript tool for exporting Azure Application Insights / Azure Monitor logs from a Log Analytics workspace and analyzing them locally.
 
-The tool is intended for local use: it authenticates with Azure, exports selected built-in KQL queries to files, then can build a console summary and a markdown report.
+The tool is intended for local use: it authenticates with Azure, exports selected built-in KQL query presets to files, then can build a console summary and a markdown report.
 
 ## Requirements
 
@@ -87,8 +87,7 @@ Example `logs-ai.config.json`:
   "defaults": {
     "timezone": "UTC",
     "outputDir": "./exports",
-    "format": "jsonl",
-    "roleName": "optional-app-role-name"
+    "format": "jsonl"
   },
   "profiles": {
     "prod": {
@@ -108,15 +107,34 @@ By default, the CLI looks for config files in this order:
 
 You can pass a custom config path with the global `--config` option.
 
-## Built-In Queries
+## Built-In Query Presets
 
-List available built-in query ids:
+Query presets define role-specific sets of built-in KQL queries.
+
+List available built-in presets:
 
 ```bash
-npm run dev -- queries list
+npm run dev -- queries presets
 ```
 
-Current built-in queries:
+Current built-in presets:
+
+| Preset id | Role filter | Queries |
+| --- | --- | --- |
+| `myaibou-connect-core-services-stream` | `myaibou-connect-core-services-stream` | `errors`, `errorTraces`, `failedRequests`, `failedDependencies` |
+| `myaibou-connect-indexer` | `myaibou-connect-indexer` | `errors`, `errorTraces`, `failedRequests`, `failedDependencies` |
+
+`--preset` is required for commands that read preset queries. The preset id is also used as the `AppRoleName` filter value inside the preset KQL, and `--queries` can narrow the selected preset to specific query ids.
+
+## Built-In Queries
+
+List built-in query ids for a preset:
+
+```bash
+npm run dev -- queries list --preset myaibou-connect-core-services-stream
+```
+
+Current queries in the `myaibou-connect-core-services-stream` preset:
 
 | Query id | Table | Purpose |
 | --- | --- | --- |
@@ -125,7 +143,9 @@ Current built-in queries:
 | `failedRequests` | `AppRequests` | Failed HTTP requests and 5xx responses. |
 | `failedDependencies` | `AppDependencies` | Failed external dependency calls. |
 
-The built-in queries currently filter to `Production` using `AspNetCoreEnvironment`, ignore response codes `401` and `404`, and ignore `/api/v2/health` endpoint records.
+The `myaibou-connect-indexer` preset currently exposes the same query ids with `AppRoleName == "myaibou-connect-indexer"` and does not filter by `AspNetCoreEnvironment` or `/api/v2/health`.
+
+The `myaibou-connect-core-services-stream` queries currently filter to `Production` using `AspNetCoreEnvironment` and ignore `/api/v2/health` endpoint records. Both presets ignore response codes `401` and `404`.
 
 ## Date Ranges
 
@@ -179,16 +199,24 @@ npm run dev -- config init --force
 
 ### `queries list`
 
-Shows built-in KQL query ids.
+Shows built-in KQL query ids for a preset.
 
 ```bash
-npm run dev -- queries list
+npm run dev -- queries list --preset myaibou-connect-core-services-stream
 ```
 
 Example:
 
 ```bash
-npm run dev -- queries list
+npm run dev -- queries list --preset myaibou-connect-core-services-stream
+```
+
+### `queries presets`
+
+Shows built-in query presets.
+
+```bash
+npm run dev -- queries presets
 ```
 
 ### `export`
@@ -207,8 +235,8 @@ Options:
 | `--to <date>` | No | End date. Defaults to now. |
 | `--profile <name>` | No | Config profile to use. |
 | `--workspace-id <id>` | No | Override Log Analytics workspace id from config. |
-| `--role <name>` | No | Filter by Application Insights role name (`AppRoleName`). |
-| `--queries <ids>` | No | Comma-separated built-in query ids. Defaults to all built-in queries. |
+| `--preset <id>` | Yes | Built-in query preset id. |
+| `--queries <ids>` | No | Comma-separated built-in query ids. Defaults to the selected preset queries. |
 | `--out <dir>` | No | Output directory. Overrides config default/profile output directory. |
 | `--format <format>` | No | Output format: `jsonl`, `json`, or `csv`. Defaults to `jsonl`. |
 
@@ -220,23 +248,27 @@ Output files:
 Examples:
 
 ```bash
-npm run dev -- export --from 24h --out ./exports/latest
+npm run dev -- export --from 24h --preset myaibou-connect-core-services-stream --out ./exports/latest
 ```
 
 ```bash
-npm run dev -- export --from 7d --to 2026-06-17T00:00:00Z --queries errors,failedRequests,failedDependencies --out ./exports/prod-week
+npm run dev -- export --from 24h --preset myaibou-connect-core-services-stream --out ./exports/core-services-stream
 ```
 
 ```bash
-npm run dev -- export --from 24h --role my-api-role --out ./exports/latest
+npm run dev -- export --from 24h --preset myaibou-connect-indexer --out ./exports/indexer
 ```
 
 ```bash
-npm run dev -- export --from 24h --profile prod --format json --out ./exports/prod-json
+npm run dev -- export --from 7d --to 2026-06-17T00:00:00Z --preset myaibou-connect-core-services-stream --queries errors,failedRequests,failedDependencies --out ./exports/prod-week
 ```
 
 ```bash
-npm run dev -- --config ./logs-ai.config.json export --from 12h --workspace-id 00000000-0000-0000-0000-000000000000
+npm run dev -- export --from 24h --preset myaibou-connect-core-services-stream --profile prod --format json --out ./exports/prod-json
+```
+
+```bash
+npm run dev -- --config ./logs-ai.config.json export --from 12h --preset myaibou-connect-core-services-stream --workspace-id 00000000-0000-0000-0000-000000000000
 ```
 
 ### `analyze`
@@ -302,8 +334,8 @@ Options:
 | `--to <date>` | No | End date. Defaults to now. |
 | `--profile <name>` | No | Config profile to use. |
 | `--workspace-id <id>` | No | Override Log Analytics workspace id from config. |
-| `--role <name>` | No | Filter by Application Insights role name (`AppRoleName`). |
-| `--queries <ids>` | No | Comma-separated built-in query ids. Defaults to all built-in queries. |
+| `--preset <id>` | Yes | Built-in query preset id. |
+| `--queries <ids>` | No | Comma-separated built-in query ids. Defaults to the selected preset queries. |
 | `--out <dir>` | No | Output directory. |
 | `--format <format>` | No | Output format: `jsonl`, `json`, or `csv`. Defaults to `jsonl`. |
 | `--report <path>` | No | Write a markdown analysis report. |
@@ -311,15 +343,15 @@ Options:
 Examples:
 
 ```bash
-npm run dev -- run --from 24h --out ./exports/latest --report ./reports/latest.md
+npm run dev -- run --from 24h --preset myaibou-connect-core-services-stream --out ./exports/latest --report ./reports/latest.md
 ```
 
 ```bash
-npm run dev -- run --from 7d --profile prod --role my-api-role --queries errors,failedRequests --report ./reports/prod-errors.md
+npm run dev -- run --from 24h --preset myaibou-connect-core-services-stream --report ./reports/core-services-stream.md
 ```
 
 ```bash
-npm run dev -- run --from 2026-06-01T00:00:00Z --to 2026-06-17T00:00:00Z --format json --out ./exports/date-range --report ./reports/date-range.md
+npm run dev -- run --from 2026-06-01T00:00:00Z --to 2026-06-17T00:00:00Z --preset myaibou-connect-core-services-stream --format json --out ./exports/date-range --report ./reports/date-range.md
 ```
 
 ## Typical Workflows
@@ -329,7 +361,7 @@ Initialize local config, then export and analyze the last 24 hours:
 ```bash
 npm run dev -- config init
 az login
-npm run dev -- run --from 24h --out ./exports/latest --report ./reports/latest.md
+npm run dev -- run --from 24h --preset myaibou-connect-core-services-stream --out ./exports/latest --report ./reports/latest.md
 ```
 
 Analyze an existing export again with a larger report limit:
@@ -338,29 +370,29 @@ Analyze an existing export again with a larger report limit:
 npm run dev -- analyze ./exports/latest --limit 50 --report ./reports/latest.md
 ```
 
-Export only request and exception data for a role:
+Export only request and exception data for the selected preset:
 
 ```bash
-npm run dev -- export --from 48h --role my-api-role --queries errors,failedRequests --out ./exports/role-errors
+npm run dev -- export --from 48h --preset myaibou-connect-core-services-stream --queries errors,failedRequests --out ./exports/role-errors
 ```
 
 Export CSV for external analysis in Excel or another tool:
 
 ```bash
-npm run dev -- export --from 24h --format csv --out ./exports/latest-csv
+npm run dev -- export --from 24h --preset myaibou-connect-core-services-stream --format csv --out ./exports/latest-csv
 ```
 
 Use compiled JavaScript instead of `tsx`:
 
 ```bash
 npm run build
-npm start -- run --from 24h --out ./exports/latest --report ./reports/latest.md
+npm start -- run --from 24h --preset myaibou-connect-core-services-stream --out ./exports/latest --report ./reports/latest.md
 ```
 
 Use a custom config file:
 
 ```bash
-npm run dev -- --config ./configs/prod.json run --from 24h --report ./reports/prod-latest.md
+npm run dev -- --config ./configs/prod.json run --from 24h --preset myaibou-connect-core-services-stream --report ./reports/prod-latest.md
 ```
 
 ## NPM Scripts
