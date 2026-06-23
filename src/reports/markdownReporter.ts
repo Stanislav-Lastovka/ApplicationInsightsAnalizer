@@ -64,16 +64,16 @@ function renderErrors(items: ErrorFocusedGroup[]): string {
     lines.push(`- Roles: ${formatList(item.roles)}`);
     lines.push(`- Operation IDs: ${formatList(item.operationIds)}`);
     lines.push("- Sample messages:");
-    lines.push(...renderSampleMessages(item.messages));
+    appendLines(lines, renderSampleMessages(item.messages));
     lines.push("");
     lines.push("Related requests:");
-    lines.push(...renderRelatedRequests(item.relatedRequests));
+    appendLines(lines, renderRelatedRequests(item.relatedRequests));
     lines.push("");
     lines.push("Related dependencies:");
-    lines.push(...renderRelatedDependencies(item.relatedDependencies));
+    appendLines(lines, renderRelatedDependencies(item.relatedDependencies));
     lines.push("");
     lines.push("Related traces:");
-    lines.push(...renderRelatedTraces(item.relatedTraces));
+    appendLines(lines, renderRelatedTraces(item.relatedTraces));
     lines.push("");
   }
 
@@ -249,4 +249,10 @@ function formatList(values: string[], limit = 10): string {
 
 function truncate(value: string, maxLength: number): string {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+}
+
+function appendLines(target: string[], source: string[]): void {
+  for (const line of source) {
+    target.push(line);
+  }
 }

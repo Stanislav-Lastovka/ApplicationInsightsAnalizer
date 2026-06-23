@@ -554,7 +554,13 @@ function average(values: number[]): number | undefined {
 }
 
 function max(values: number[]): number | undefined {
-  return values.length > 0 ? Math.max(...values) : undefined;
+  let result: number | undefined;
+
+  for (const value of values) {
+    result = result === undefined || value > result ? value : result;
+  }
+
+  return result;
 }
 
 function stringValue(value: unknown): string | undefined {

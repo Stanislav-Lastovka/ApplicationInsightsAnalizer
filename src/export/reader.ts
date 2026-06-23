@@ -13,7 +13,9 @@ export async function readExportedRecords(inputPath: string): Promise<LogRecord[
     const records: LogRecord[] = [];
 
     for (const file of files.filter(isExportDataFile)) {
-      records.push(...(await readExportedRecords(path.join(resolved, file))));
+      for (const record of await readExportedRecords(path.join(resolved, file))) {
+        records.push(record);
+      }
     }
 
     return records;
